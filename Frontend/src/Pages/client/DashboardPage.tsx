@@ -6,6 +6,8 @@ import { reservationsApi } from '../../api/reservations.api';
 import type { Flight, Reservation } from '../../types/api.types';
 import { useAuth } from '../../hooks/useAuth';
 import Navbar from '../../components/common/Navbar';
+import HeroVideo from '../../components/common/HeroVideo';
+import Footer from '../../components/common/Footer';
 import FlightCard from '../../components/flights/FlightCard';
 import ReservationCard from '../../components/reservations/ReservationCard';
 import SkeletonCard from '../../components/common/SkeletonCard';
@@ -56,6 +58,11 @@ export default function DashboardPage() {
   return (
     <>
       <Navbar />
+      <HeroVideo 
+        onExploreClick={() => {
+          document.querySelector('.page-content')?.scrollIntoView({ behavior: 'smooth' });
+        }} 
+      />
       <div className="container page-content">
         <div className="page-header" style={{ marginBottom: '48px' }}>
           <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>{today}</span>
@@ -134,6 +141,7 @@ export default function DashboardPage() {
         </section>
 
       </div>
+      <Footer />
     </>
   );
 }

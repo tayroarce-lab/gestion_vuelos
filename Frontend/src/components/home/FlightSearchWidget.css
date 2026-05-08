@@ -1,0 +1,133 @@
+.search-widget {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 1000px;
+  margin: -80px auto 40px; /* Overlap with hero */
+  position: relative;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.search-widget-tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.search-widget-tabs .tab {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.search-widget-tabs .tab:hover {
+  background: var(--bg);
+}
+
+.search-widget-tabs .tab.active {
+  color: var(--primary);
+  background: var(--primary-light);
+  color: white;
+}
+
+.search-widget-form {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.search-widget-form .input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-widget-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 48px;
+  transition: border-color 0.3s;
+}
+
+.input-with-icon:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+.input-with-icon svg {
+  color: var(--text);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.input-with-icon input {
+  border: none;
+  background: none;
+  height: 100%;
+  width: 100%;
+  font-size: 15px;
+  color: var(--text-h);
+  outline: none;
+}
+
+.input-with-icon input::placeholder {
+  color: #9ca3af;
+}
+
+.btn-search {
+  height: 48px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0 24px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-search:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(217, 160, 91, 0.4);
+}
+
+@media (max-width: 900px) {
+  .search-widget-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-widget {
+    margin-top: -40px;
+  }
+}

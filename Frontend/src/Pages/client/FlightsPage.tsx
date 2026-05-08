@@ -3,6 +3,11 @@ import { Plane, Filter, X } from 'lucide-react';
 import { flightsApi } from '../../api/flights.api';
 import type { Flight } from '../../types/api.types';
 import Navbar from '../../components/common/Navbar';
+import HeroVideo from '../../components/common/HeroVideo';
+import FlightSearchWidget from '../../components/home/FlightSearchWidget';
+import FeaturedDestinations from '../../components/home/FeaturedDestinations';
+import BenefitsSection from '../../components/home/BenefitsSection';
+import Footer from '../../components/common/Footer';
 import FlightCard from '../../components/flights/FlightCard';
 import SkeletonCard from '../../components/common/SkeletonCard';
 import ErrorState from '../../components/common/ErrorState';
@@ -81,10 +86,22 @@ export default function FlightsPage() {
   return (
     <>
       <Navbar />
-      <div className="container page-content">
-        <div className="page-header">
-          <h1>Vuelos disponibles</h1>
-          <p>Encuentra y reserva tu próximo destino</p>
+      <HeroVideo 
+        onExploreClick={() => {
+          document.querySelector('.filters-bar')?.scrollIntoView({ behavior: 'smooth' });
+        }} 
+      />
+      
+      <FlightSearchWidget />
+      
+      <FeaturedDestinations />
+      
+      <BenefitsSection />
+
+      <div className="container page-content" style={{ marginTop: '80px', marginBottom: '80px' }}>
+        <div className="page-header text-center">
+          <h2>Encuentra tu vuelo ideal</h2>
+          <p>Utiliza los filtros para personalizar tu búsqueda</p>
         </div>
 
         {/* Barra de Filtros */}
@@ -179,6 +196,7 @@ export default function FlightsPage() {
           </>
         )}
       </div>
+      <Footer />
     </>
   );
 }
