@@ -110,8 +110,6 @@ module.exports = (sequelize) => {
       tableName: 'flights',
       underscored: true,
       timestamps: true,
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
     }
   );
 

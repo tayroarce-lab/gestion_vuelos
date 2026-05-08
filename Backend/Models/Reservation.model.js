@@ -58,8 +58,6 @@ module.exports = (sequelize) => {
       tableName: 'reservations',
       underscored: true,
       timestamps: true,
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
 
       indexes: [
         // La UNIQUE KEY (user_id, flight_id) ya existe en DB; solo documentamos

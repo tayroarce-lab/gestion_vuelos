@@ -1,17 +1,12 @@
 'use strict';
-const { QueryTypes }    = require('sequelize');
-const { Flight, User }  = require('../models');
-const { sequelize }     = require('../models');
+const { Op } = require('sequelize');
+const { Flight, User, Reservation, sequelize }  = require('../models');
 const response          = require('../utils/response.helper');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers de error MySQL
+// Helpers de error
 // ─────────────────────────────────────────────────────────────────────────────
 function handleDbError(err, res, next) {
-  // Triggers: SIGNAL SQLSTATE '45xxx'
-  if (err.original?.sqlState?.startsWith('45')) {
-    return response.error(res, err.original.sqlMessage, 400);
-  }
   // Unique constraint (ej: flight_number duplicado)
   if (err.name === 'SequelizeUniqueConstraintError') {
     return response.error(res, 'El número de vuelo ya existe', 409);
@@ -26,14 +21,18 @@ function handleDbError(err, res, next) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/flights
-// Lista vuelos disponibles desde la vista vw_available_flights
+// Lista vuelos disponibles
 // ─────────────────────────────────────────────────────────────────────────────
 async function getFlights(req, res, next) {
   try {
-    const flights = await sequelize.query(
-      'SELECT * FROM vw_available_flights',
-      { type: QueryTypes.SELECT }
-    );
+    const flights = await Flight.findAll({
+      where: {
+        status: 'scheduled',
+        availableSeats: { [Op.gt]: 0 },
+        departureDatetime: { [Op.gt]: new Date() }
+      },
+      order: [['departureDatetime', 'ASC']]
+    });
     return response.success(res, flights, 'Vuelos disponibles');
   } catch (err) {
     next(err);
@@ -74,13 +73,13 @@ async function createFlight(req, res, next) {
 
     const flight = await Flight.create({
       flightNumber,
-      origin: origin.trim(),
-      destination: destination.trim(),
+      origin: origin?.trim(),
+      destination: destination?.trim(),
       departureDatetime,
       arrivalDatetime,
       price,
       totalSeats,
-      availableSeats: totalSeats,   // al crear, todos los asientos están disponibles
+      availableSeats: totalSeats,   // Al crear, todos los asientos están disponibles
       status: 'scheduled',
       createdBy: req.user.id,
     });
@@ -113,11 +112,21 @@ async function updateFlight(req, res, next) {
       'price', 'totalSeats', 'status',
     ];
 
-    // Solo actualizar campos permitidos que vengan en el body
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
         updates[key] = req.body[key];
+      }
+    }
+
+    // Si se cambia totalSeats, necesitamos lógica adicional para availableSeats
+    // Por simplicidad, aquí asumimos que el admin sabe lo que hace, 
+    // pero idealmente deberíamos validar contra las reservas activas.
+    if (updates.totalSeats !== undefined) {
+      const seatsTaken = flight.totalSeats - flight.availableSeats;
+      updates.availableSeats = updates.totalSeats - seatsTaken;
+      if (updates.availableSeats < 0) {
+        return response.error(res, 'El nuevo total de asientos no cubre las reservas existentes', 400);
       }
     }
 
@@ -131,23 +140,38 @@ async function updateFlight(req, res, next) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/flights/:id  [ADMIN]
-// Soft delete: cambia status a 'cancelled'
+// Cancela un vuelo y sus reservas asociadas
 // ─────────────────────────────────────────────────────────────────────────────
 async function cancelFlight(req, res, next) {
+  const transaction = await sequelize.transaction();
   try {
-    const flight = await Flight.findByPk(req.params.id);
+    const flight = await Flight.findByPk(req.params.id, { transaction });
     if (!flight) {
+      await transaction.rollback();
       return response.error(res, 'Vuelo no encontrado', 404);
     }
 
     if (flight.status === 'cancelled') {
+      await transaction.rollback();
       return response.error(res, 'El vuelo ya está cancelado', 400);
     }
 
-    await flight.update({ status: 'cancelled' });
+    // 1. Marcar vuelo como cancelado
+    await flight.update({ status: 'cancelled' }, { transaction });
 
-    return response.success(res, null, 'Vuelo cancelado exitosamente');
+    // 2. Cancelar automáticamente todas las reservas asociadas que no estén ya canceladas
+    await Reservation.update(
+      { status: 'cancelled' },
+      { 
+        where: { flightId: flight.id, status: { [Op.ne]: 'cancelled' } },
+        transaction 
+      }
+    );
+
+    await transaction.commit();
+    return response.success(res, null, 'Vuelo y reservas asociadas cancelados exitosamente');
   } catch (err) {
+    await transaction.rollback();
     return handleDbError(err, res, next);
   }
 }

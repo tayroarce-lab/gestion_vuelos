@@ -10,7 +10,9 @@
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo",
     "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
-    "migrate:status": "sequelize-cli db:migrate:status"
+    "migrate:status": "sequelize-cli db:migrate:status",
+    "db:cleanup": "node scripts/cleanup_db.js",
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles"
   },
   "keywords": [
     "vuelos",
@@ -35,7 +37,10 @@
     "sequelize": "^6.37.3"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.4.0",
     "nodemon": "^3.1.0",
-    "sequelize-cli": "^6.6.5"
+    "sequelize-cli": "^6.6.5",
+    "supertest": "^7.2.2"
   }
 }

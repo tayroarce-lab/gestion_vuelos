@@ -66,12 +66,10 @@ module.exports = (sequelize) => {
       tableName: 'users',
       underscored: true,
       timestamps: true,
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
 
       // defaultScope: NUNCA retornar passwordHash en queries normales
       defaultScope: {
-        attributes: { exclude: ['passwordHash', 'password_hash'] },
+        attributes: { exclude: ['passwordHash'] },
       },
 
       // Scope especial para login (necesitamos el hash)

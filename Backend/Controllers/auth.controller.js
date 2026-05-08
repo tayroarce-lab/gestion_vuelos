@@ -83,8 +83,11 @@ async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    // Buscar usuario con su hash (scope especial)
-    const user = await User.scope('withPassword').findOne({ where: { email } });
+    // Buscar usuario incluyendo explícitamente el hash de la contraseña
+    const user = await User.findOne({ 
+      where: { email },
+      attributes: { include: ['passwordHash'] } 
+    });
 
     // SEGURIDAD: siempre ejecutar bcrypt.compare para evitar timing attacks
     const hashToCompare = user ? user.passwordHash : DUMMY_HASH;
