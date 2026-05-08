@@ -60,8 +60,8 @@ module.exports = (sequelize) => {
       timestamps: true,
 
       indexes: [
-        // La UNIQUE KEY (user_id, flight_id) ya existe en DB; solo documentamos
-        { unique: true, fields: ['user_id', 'flight_id'], name: 'uq_reservations_user_flight' },
+        { fields: ['user_id'] },
+        { fields: ['flight_id'] },
       ],
     }
   );

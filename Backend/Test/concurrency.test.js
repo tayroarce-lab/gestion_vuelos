@@ -1,22 +1,26 @@
 const request = require('supertest');
 const app = require('../app');
-const { User, Flight, Reservation } = require('../models');
+const { User, Flight, Reservation, Airplane, Seat } = require('../models');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 
 describe('Concurrency / Race Conditions [Caso 16]', () => {
-  let admin, flight, users, cookies;
+  let admin, flight, airplane, seat, users, cookies;
 
   beforeEach(async () => {
     // Los destroy y truncates ya se hacen en setup.js beforeEach
 
-    // Crear admin y vuelo con 1 solo asiento disponible
+    // Crear admin y avión
     admin = await User.create({ name: 'Admin', email: 'admin@test.com', passwordHash: 'h', role: 'admin' });
+    airplane = await Airplane.create({ model: 'Race Plane', rows: 1, colsPerRow: 1 });
+    seat = await Seat.create({ airplaneId: airplane.id, rowNumber: 1, columnLetter: 'A' });
+
     flight = await Flight.create({
       flightNumber: 'RACE1', origin: 'MEX', destination: 'GUA',
       departureDatetime: new Date(Date.now() + 86400000),
       arrivalDatetime: new Date(Date.now() + 90000000),
-      price: 100, totalSeats: 10, availableSeats: 1, createdBy: admin.id
+      price: 100, totalSeats: 1, availableSeats: 1, 
+      airplaneId: airplane.id, createdBy: admin.id
     });
 
     // Crear 5 usuarios diferentes para intentar reservar al mismo tiempo
@@ -34,14 +38,14 @@ describe('Concurrency / Race Conditions [Caso 16]', () => {
     });
   });
 
-  it('solo 1 usuario debería lograr reservar el último asiento disponible [Caso 16]', async () => {
-    // Lanzar 5 peticiones simultáneas
+  it('solo 1 usuario debería lograr reservar el mismo asiento específico [Caso 16]', async () => {
+    // Lanzar 5 peticiones simultáneas intentando reservar EL MISMO asiento
     const results = await Promise.all(
       cookies.map(cookie => 
         request(app)
           .post('/api/reservations')
           .set('Cookie', cookie)
-          .send({ flightId: flight.id, seatsReserved: 1 })
+          .send({ flightId: flight.id, seatIds: [seat.id] })
       )
     );
 

@@ -9,7 +9,7 @@ import RegisterPage from '../pages/auth/RegisterPage';
 // Client
 import DashboardPage     from '../pages/client/DashboardPage';
 import FlightsPage       from '../pages/client/FlightsPage';
-import FlightDetailPage  from '../pages/client/FlightDetailPage';
+import FlightDetailPage  from '../Pages/client/FlightDetailNew';
 import ReservationsPage  from '../pages/client/ReservationsPage';
 
 // Admin

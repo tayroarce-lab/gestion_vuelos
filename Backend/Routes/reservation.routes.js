@@ -13,8 +13,14 @@ const createReservationValidators = [
   body('flightId')
     .isInt({ gt: 0 }).withMessage('El ID del vuelo debe ser un entero positivo'),
 
-  body('seatsReserved')
-    .isInt({ min: 1, max: 9 }).withMessage('Debe reservar entre 1 y 9 asientos'),
+  body('seatIds')
+    .isArray({ min: 1, max: 9 }).withMessage('Debes seleccionar entre 1 y 9 asientos')
+    .custom((ids) => {
+      if (ids.some(id => !Number.isInteger(id) || id <= 0)) {
+        throw new Error('Los IDs de los asientos deben ser enteros positivos');
+      }
+      return true;
+    }),
 ];
 
 const idParamValidator = [
@@ -22,6 +28,12 @@ const idParamValidator = [
 ];
 
 // ── Rutas ─────────────────────────────────────────────────────────────────────
+router.use((req, res, next) => {
+  if (req.method === 'POST') {
+    console.log('RESERVATION POST BODY:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
 
 // GET /api/reservations       — cliente: mis reservas
 router.get('/',

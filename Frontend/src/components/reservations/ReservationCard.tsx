@@ -80,6 +80,27 @@ export default function ReservationCard({ reservation, onCancelSuccess, isAdmin 
               {seats} asiento{seats !== 1 ? 's' : ''}
             </div>
           </div>
+
+          {reservation.seats && reservation.seats.length > 0 && (
+            <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {reservation.seats.map(seat => (
+                <span 
+                  key={seat.id} 
+                  style={{ 
+                    fontSize: '11px', 
+                    background: 'var(--color-primary-light)', 
+                    color: 'var(--color-primary)', 
+                    padding: '2px 8px', 
+                    borderRadius: '4px',
+                    fontWeight: 600,
+                    border: '1px solid var(--color-border)'
+                  }}
+                >
+                  {seat.rowNumber ?? seat.row_number}{seat.columnLetter ?? seat.column_letter}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

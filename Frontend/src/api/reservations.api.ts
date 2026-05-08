@@ -8,7 +8,7 @@ export const reservationsApi = {
   getAll:   () =>
     api.get<Reservation[]>('/reservations/all'),
 
-  create:   (data: { flightId: number; seatsReserved: number }) =>
+  create:   (data: { flightId: number; seatIds: number[] }) =>
     api.post<{ reservationId: number; message: string }>('/reservations', data),
 
   cancel:   (id: number) =>

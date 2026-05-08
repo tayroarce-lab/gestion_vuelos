@@ -26,4 +26,18 @@ export const flightsApi = {
 
   cancel:  (id: number) =>
     api.delete<null>(`/flights/${id}`),
+    
+  getSeats: (id: number) =>
+    api.get<{
+      airplane: string;
+      rows: number;
+      colsPerRow: number;
+      seats: {
+        id: number;
+        row: number;
+        column: string;
+        type: string;
+        isTaken: boolean;
+      }[];
+    }>(`/flights/${id}/seats`),
 };

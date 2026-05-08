@@ -12,8 +12,11 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+  await sequelize.query('TRUNCATE TABLE reservation_seats');
   await sequelize.query('TRUNCATE TABLE reservations');
+  await sequelize.query('TRUNCATE TABLE seats');
   await sequelize.query('TRUNCATE TABLE flights');
+  await sequelize.query('TRUNCATE TABLE airplanes');
   await sequelize.query('TRUNCATE TABLE users');
   await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
 });

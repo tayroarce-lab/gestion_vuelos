@@ -98,6 +98,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 'scheduled',
       },
+      airplaneId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        field: 'airplane_id',
+      },
       createdBy: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: false,

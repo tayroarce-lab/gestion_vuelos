@@ -12,6 +12,22 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorState from '../../components/common/ErrorState';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import SeatMap from '../../components/flights/SeatMap';
+
+interface Seat {
+  id: number;
+  row: number;
+  column: string;
+  type: string;
+  isTaken: boolean;
+}
+
+interface SeatData {
+  airplane: string;
+  rows: number;
+  colsPerRow: number;
+  seats: Seat[];
+}
 
 export default function FlightDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,18 +37,28 @@ export default function FlightDetailPage() {
   const { add } = useToast();
 
   const [flight, setFlight] = useState<Flight | null>(null);
+  const [seatData, setSeatData] = useState<SeatData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const [seatsToReserve, setSeatsToReserve] = useState(1);
+  const [selectedSeatIds, setSelectedSeatIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReserving, setIsReserving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setIsLoading(true);
-    flightsApi.getById(Number(id))
-      .then(res => setFlight(res.data))
+    
+    Promise.all([
+      flightsApi.getById(Number(id)),
+      flightsApi.getSeats(Number(id))
+    ])
+      .then(([flightRes, seatsRes]) => {
+        console.log('Flight Data:', flightRes.data);
+        console.log('Seat Data:', seatsRes.data);
+        setFlight(flightRes.data);
+        setSeatData(seatsRes.data);
+      })
       .catch(() => setError(true))
       .finally(() => setIsLoading(false));
   }, [id]);
@@ -49,17 +75,29 @@ export default function FlightDetailPage() {
 
   const duration  = (depTime && arrTime) ? calcDuration(depTime, arrTime) : 0;
   const isSoldOut = avail === 0;
+  const seatsToReserve = selectedSeatIds.length;
   const totalPrice = priceNum * seatsToReserve;
 
-  // Manejo de cambios en el input de asientos
-  const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = parseInt(e.target.value, 10);
-    if (isNaN(val)) return;
-    const max = Math.min(9, avail as number);
-    if (val < 1) val = 1;
-    if (val > max) val = max;
-    setSeatsToReserve(val);
+  const handleToggleSeat = (seatId: number) => {
+    setSelectedSeatIds(prev => {
+      if (prev.includes(seatId)) {
+        return prev.filter(id => id !== seatId);
+      }
+      if (prev.length >= 9) {
+        add('info', 'Máximo 9 asientos por reserva');
+        return prev;
+      }
+      return [...prev, seatId];
+    });
   };
+
+  const selectedSeatCodes = selectedSeatIds
+    .map(sid => {
+      const s = seatData?.seats.find(s => s.id === sid);
+      return s ? `${s.row}${s.column}` : '';
+    })
+    .filter(Boolean)
+    .join(', ');
 
   const handleReserveClick = () => {
     if (!isAuthenticated) {
@@ -72,11 +110,12 @@ export default function FlightDetailPage() {
   const executeReservation = async () => {
     setIsReserving(true);
     try {
-      await reservationsApi.create({ flightId: flight.id, seatsReserved: seatsToReserve });
+      await reservationsApi.create({ flightId: flight.id, seatIds: selectedSeatIds });
       add('success', '¡Reserva confirmada exitosamente!');
       setIsModalOpen(false);
       navigate('/reservations');
     } catch (err: any) {
+      console.error('RESERVATION ERROR:', err);
       add('error', err.message || 'Error al procesar la reserva');
       setIsModalOpen(false);
     } finally {
@@ -101,7 +140,7 @@ export default function FlightDetailPage() {
             <div className="card" style={{ padding: '32px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  Vuelo {flightNum}
+                  Vuelo {flightNum} (V2)
                   <StatusBadge status={flight.status} />
                 </h2>
               </div>
@@ -163,38 +202,48 @@ export default function FlightDetailPage() {
           {/* Panel de Reserva (Col 3) */}
           <div style={{ alignSelf: 'start', position: 'sticky', top: '100px' }}>
             <div className="card" style={{ borderTop: '4px solid var(--color-primary)' }}>
-              <h3 style={{ marginBottom: '8px' }}>Reservar este vuelo</h3>
+              <h3 style={{ marginBottom: '8px' }}>Tu Reserva</h3>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: isSoldOut ? 'var(--color-error)' : 'var(--color-success)', fontSize: '14px', fontWeight: 500 }}>
                 <Info size={16} />
-                {isSoldOut ? 'No hay asientos disponibles' : `${avail} asientos disponibles`}
+                {isSoldOut ? 'No hay asientos disponibles' : `${avail} asientos totales disponibles`}
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="seats">Cantidad de pasajeros (max 9)</label>
-                <input
-                  id="seats"
-                  type="number"
-                  className="form-input"
-                  min="1"
-                  max={Math.min(9, avail as number)}
-                  value={seatsToReserve}
-                  onChange={handleSeatsChange}
-                  disabled={isSoldOut || (user?.role === 'admin')}
-                />
-              </div>
+              {seatData && (
+                <div style={{ marginBottom: '24px' }}>
+                  <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                    Selecciona tus asientos en el mapa:
+                  </p>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+                    <SeatMap 
+                      seats={seatData.seats}
+                      rows={seatData.rows}
+                      colsPerRow={seatData.colsPerRow}
+                      selectedSeatIds={selectedSeatIds}
+                      onToggleSeat={handleToggleSeat}
+                      maxSelection={9}
+                    />
+                  </div>
+                </div>
+              )}
 
-              <div style={{ background: 'var(--color-bg)', padding: '16px', borderRadius: 'var(--radius-md)', margin: '24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Total ({seatsToReserve} {seatsToReserve === 1 ? 'pasajero' : 'pasajeros'}):</span>
-                <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                  {formatPrice(totalPrice)}
-                </span>
+              <div style={{ background: 'var(--color-primary-light)', padding: '16px', borderRadius: 'var(--radius-md)', margin: '24px 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Asientos seleccionados:</span>
+                  <span style={{ fontSize: '16px', fontWeight: 600 }}>{seatsToReserve}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Total a pagar:</span>
+                  <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                    {formatPrice(totalPrice)}
+                  </span>
+                </div>
               </div>
 
               <button
                 className="btn btn-primary btn-full btn-lg"
                 onClick={handleReserveClick}
-                disabled={isSoldOut || (user?.role === 'admin')}
+                disabled={isSoldOut || (user?.role === 'admin') || seatsToReserve === 0}
               >
                 {!isAuthenticated 
                   ? 'Inicia sesión para reservar' 
@@ -202,7 +251,9 @@ export default function FlightDetailPage() {
                     ? 'Los admins no pueden reservar' 
                     : isSoldOut 
                       ? 'Vuelo agotado' 
-                      : 'Reservar ahora'}
+                      : seatsToReserve === 0
+                        ? 'Selecciona tus asientos'
+                        : 'Confirmar Reserva'}
               </button>
             </div>
           </div>
@@ -215,7 +266,7 @@ export default function FlightDetailPage() {
         onClose={() => setIsModalOpen(false)}
         onConfirm={executeReservation}
         title="Confirmar reserva"
-        message={`Estás a punto de reservar ${seatsToReserve} asiento(s) en el vuelo ${flightNum} de ${flight.origin} a ${flight.destination}. El cargo total será de ${formatPrice(totalPrice)}.`}
+        message={`Estás a punto de reservar los asientos [${selectedSeatCodes}] en el vuelo ${flightNum} de ${flight.origin} a ${flight.destination}. El cargo total será de ${formatPrice(totalPrice)}.`}
         confirmLabel="Confirmar y reservar"
         isLoading={isReserving}
       />

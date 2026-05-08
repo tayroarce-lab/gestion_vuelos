@@ -39,6 +39,16 @@ export interface Flight {
   updatedAt?: string;
 }
 
+export interface Seat {
+  id: number;
+  rowNumber: number;
+  row_number?: number;
+  columnLetter: string;
+  column_letter?: string;
+  type: string;
+  airplaneId?: number;
+}
+
 export interface Reservation {
   id: number;
   userId?: number;
@@ -56,6 +66,7 @@ export interface Reservation {
   // Campos extra del SP/vista
   flight?: Flight;
   user?: User;
+  seats?: Seat[];
   // Campos planos de la vista sp_get_user_reservations
   flight_number?: string;
   origin?: string;

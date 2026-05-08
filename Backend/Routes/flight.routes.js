@@ -50,6 +50,9 @@ const flightValidators = [
 
   body('totalSeats')
     .isInt({ min: 1, max: 500 }).withMessage('Los asientos deben ser un entero entre 1 y 500'),
+
+  body('airplaneId')
+    .isInt({ gt: 0 }).withMessage('El ID del avión debe ser un entero positivo'),
 ];
 
 // Validadores parciales para PUT (todos opcionales)
@@ -61,6 +64,7 @@ const flightUpdateValidators = [
   body('arrivalDatetime').optional().isISO8601().withMessage('Fecha ISO inválida'),
   body('price').optional().isFloat({ gt: 0 }).withMessage('Precio debe ser mayor a 0'),
   body('totalSeats').optional().isInt({ min: 1, max: 500 }).withMessage('Entre 1 y 500'),
+  body('airplaneId').optional().isInt({ gt: 0 }).withMessage('El ID del avión debe ser un entero positivo'),
   body('status')
     .optional()
     .isIn(['scheduled', 'delayed', 'cancelled', 'completed'])
@@ -74,7 +78,8 @@ const idParamValidator = [
 // ── Rutas ─────────────────────────────────────────────────────────────────────
 // Públicas
 router.get('/',    flightCtrl.getFlights);
-router.get('/:id', idParamValidator, handleValidationErrors, flightCtrl.getFlightById);
+router.get('/:id',       idParamValidator, handleValidationErrors, flightCtrl.getFlightById);
+router.get('/:id/seats', idParamValidator, handleValidationErrors, flightCtrl.getFlightSeats);
 
 // Solo admin
 router.post('/',

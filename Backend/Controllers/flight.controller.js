@@ -68,7 +68,7 @@ async function createFlight(req, res, next) {
     const {
       flightNumber, origin, destination,
       departureDatetime, arrivalDatetime,
-      price, totalSeats,
+      price, totalSeats, airplaneId
     } = req.body;
 
     const flight = await Flight.create({
@@ -81,6 +81,7 @@ async function createFlight(req, res, next) {
       totalSeats,
       availableSeats: totalSeats,   // Al crear, todos los asientos están disponibles
       status: 'scheduled',
+      airplaneId,
       createdBy: req.user.id,
     });
 
@@ -176,4 +177,61 @@ async function cancelFlight(req, res, next) {
   }
 }
 
-module.exports = { getFlights, getFlightById, createFlight, updateFlight, cancelFlight };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/flights/:id/seats
+// Retorna el mapa de asientos con su estado de ocupación
+// ─────────────────────────────────────────────────────────────────────────────
+async function getFlightSeats(req, res, next) {
+  try {
+    const { Airplane, Seat, ReservationSeat } = require('../models');
+    
+    const flight = await Flight.findByPk(req.params.id, {
+      include: [{ 
+        model: Airplane, 
+        as: 'airplane',
+        include: [{ model: Seat, as: 'seats' }]
+      }]
+    });
+
+    if (!flight || !flight.airplane) {
+      return response.error(res, 'Configuración de avión no encontrada para este vuelo', 404);
+    }
+
+    // Buscar todos los asientos ocupados para este vuelo
+    const takenReservations = await Reservation.findAll({
+      where: { flightId: flight.id, status: { [Op.ne]: 'cancelled' } },
+      include: [{ model: Seat, as: 'seats', attributes: ['id'] }]
+    });
+
+    const takenSeatIds = new Set();
+    takenReservations.forEach(r => {
+      r.seats.forEach(s => takenSeatIds.add(s.id));
+    });
+
+    const seatMap = flight.airplane.seats.map(seat => ({
+      id: Number(seat.id),
+      row: Number(seat.rowNumber),
+      column: seat.columnLetter,
+      type: seat.type,
+      isTaken: takenSeatIds.has(seat.id)
+    }));
+
+    return response.success(res, {
+      airplane: flight.airplane.model,
+      rows: flight.airplane.rows,
+      colsPerRow: flight.airplane.colsPerRow,
+      seats: seatMap
+    }, 'Mapa de asientos');
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { 
+  getFlights, 
+  getFlightById, 
+  createFlight, 
+  updateFlight, 
+  cancelFlight,
+  getFlightSeats 
+};

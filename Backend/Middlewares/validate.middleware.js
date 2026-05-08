@@ -14,6 +14,7 @@ function handleValidationErrors(req, res, next) {
       field: err.path || err.param,
       message: err.msg,
     }));
+    console.log('VALIDATION ERRORS:', JSON.stringify(errors, null, 2));
     return response.error(res, 'Datos de entrada inválidos', 422, errors);
   }
 
